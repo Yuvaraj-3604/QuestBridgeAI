@@ -13,6 +13,9 @@ import Settings from '@/Pages/Settings';
 import Leaderboard from '@/Pages/Leaderboard';
 import AILeaderboardResults from '@/Pages/AILeaderboardResults';
 import ProjectMonitoringFeed from '@/Pages/ProjectMonitoringFeed';
+import Login from '@/Pages/Login';
+import Signup from '@/Pages/Signup';
+import ForgotPassword from '@/Pages/ForgotPassword';
 
 function App() {
     return (
@@ -29,6 +32,9 @@ function App() {
                 <Route path="/Leaderboard" element={<Leaderboard />} />
                 <Route path="/AIResults" element={<AILeaderboardResults />} />
                 <Route path="/Monitoring" element={<ProjectMonitoringFeed />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/Settings" element={<Settings />} />
             </Routes>
         </Router>

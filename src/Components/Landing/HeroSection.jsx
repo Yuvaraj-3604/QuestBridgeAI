@@ -39,7 +39,7 @@ export default function HeroSection() {
           </div>
           <span className="text-white font-bold text-2xl">Questbridge</span>
         </div>
-        
+
         <div className="hidden md:flex items-center gap-8">
           <a href="#features" className="text-gray-300 hover:text-white transition-colors">Features</a>
           <a href="#solutions" className="text-gray-300 hover:text-white transition-colors">Solutions</a>
@@ -52,7 +52,7 @@ export default function HeroSection() {
               Dashboard
             </Button>
           </Link>
-          <Link to={createPageUrl('Dashboard')}>
+          <Link to="/login">
             <Button className="bg-cyan-500 hover:bg-cyan-600 text-white">
               Get Started
             </Button>
@@ -74,7 +74,7 @@ export default function HeroSection() {
           <h2 className="text-4xl md:text-6xl font-bold text-cyan-400 mb-6">
             Software for
           </h2>
-          
+
           <motion.div
             key={currentType}
             initial={{ opacity: 0, y: 20 }}
@@ -88,8 +88,8 @@ export default function HeroSection() {
           </motion.div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12 max-w-xl mx-auto">
-            <Input 
-              placeholder="Enter your work email" 
+            <Input
+              placeholder="Enter your work email"
               className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-14 text-lg flex-1"
             />
             <Link to={createPageUrl('Dashboard')}>

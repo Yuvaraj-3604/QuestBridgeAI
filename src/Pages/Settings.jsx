@@ -29,9 +29,11 @@ export default function Settings() {
   const [user, setUser] = useState(null);
   const [profileData, setProfileData] = useState({
     full_name: '',
+    email: '',
     company: '',
     bio: '',
-    website: ''
+    website: '',
+    avatar: ''
   });
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
@@ -47,9 +49,11 @@ export default function Settings() {
         setUser(userData);
         setProfileData({
           full_name: userData.full_name || '',
+          email: userData.email || '',
           company: userData.company || '',
           bio: userData.bio || '',
-          website: userData.website || ''
+          website: userData.website || '',
+          avatar: userData.avatar || ''
         });
       } catch (e) {
         // User not logged in
@@ -68,12 +72,42 @@ export default function Settings() {
     }
   });
 
+  const fileInputRef = React.useRef(null);
+
   const handleSaveProfile = () => {
     updateMutation.mutate(profileData);
   };
 
   const handleSaveNotifications = () => {
     updateMutation.mutate({ notifications });
+  };
+
+  const handlePhotoChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Check size (2MB limit)
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Image size should be less than 2MB.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result;
+        // Update local state for immediate preview
+        setUser(prev => ({ ...prev, avatar: base64String }));
+        setProfileData(prev => ({ ...prev, avatar: base64String }));
+
+        // Optionally trigger save immediately or wait for user to click separate save
+        // Let's autosave it for better UX as it's a specific action
+        updateMutation.mutate({ avatar: base64String });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -122,7 +156,16 @@ export default function Settings() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <Button variant="outline" size="sm">Change Photo</Button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/png, image/jpeg, image/gif"
+                        onChange={handlePhotoChange}
+                      />
+                      <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                        Change Photo
+                      </Button>
                       <p className="text-sm text-gray-500 mt-2">JPG, PNG or GIF. Max 2MB.</p>
                     </div>
                   </div>
@@ -142,9 +185,9 @@ export default function Settings() {
                       <Label htmlFor="email">Email</Label>
                       <Input
                         id="email"
-                        value={user?.email || ''}
-                        disabled
-                        className="mt-1 bg-gray-50"
+                        value={profileData.email || user?.email || ''}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+                        className="mt-1"
                       />
                     </div>
                     <div>

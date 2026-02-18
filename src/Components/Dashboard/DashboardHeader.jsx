@@ -3,6 +3,8 @@ import { Bell, Search, Menu } from 'lucide-react';
 import { Input } from '@/Components/ui/input';
 import { Button } from '@/Components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
+import { useNavigate } from 'react-router-dom';
+import { base44 } from '@/api/base44Client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +15,13 @@ import {
 } from '@/Components/ui/dropdown-menu';
 
 export default function DashboardHeader({ user, onMenuClick }) {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await base44.auth.logout();
+    navigate('/login');
+  };
+
   return (
     <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-40">
       <div className="flex items-center gap-4">
@@ -56,10 +65,10 @@ export default function DashboardHeader({ user, onMenuClick }) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/Settings')}>Profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/Settings')}>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">Log out</DropdownMenuItem>
+            <DropdownMenuItem className="text-red-600" onClick={handleLogout}>Log out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

@@ -36,13 +36,130 @@ const mockEvents = [
     }
 ];
 
-const mockRegistrations = [];
+// Helper to get users from storage
+const getUsers = () => {
+    const stored = localStorage.getItem('mockUsers');
+    if (stored) {
+        return JSON.parse(stored);
+    }
+    const defaults = [
+        {
+            id: 1,
+            full_name: 'John Doe',
+            email: 'john@example.com',
+            password: 'password123'
+        }
+    ];
+    localStorage.setItem('mockUsers', JSON.stringify(defaults));
+    return defaults;
+};
 
 export const base44 = {
     auth: {
-        me: async () => ({ full_name: 'John Doe', email: 'john@example.com' }),
-        login: async () => { },
-        logout: async () => { },
+        me: async () => {
+            const storedUser = localStorage.getItem('currentUser');
+            if (storedUser) {
+                return JSON.parse(storedUser);
+            }
+            // Return default user if not logged in (to prevent breaking)
+            return { full_name: 'John Doe', email: 'john@example.com' };
+        },
+        login: async (email, password) => {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    const users = getUsers();
+                    const user = users.find(u => u.email === email || u.username === email); // Allow username or email
+
+                    if (!user) {
+                        reject(new Error("No account found with this email."));
+                        return;
+                    }
+
+                    // Simulate password hash comparison
+                    if (user.password !== password) {
+                        reject(new Error("Incorrect password. Please try again."));
+                        return;
+                    }
+
+                    // Set current session
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    resolve(user);
+                }, 1000);
+            });
+        },
+        signup: async (userData) => {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const users = getUsers();
+                    const newUser = {
+                        id: users.length + 1,
+                        ...userData
+                    };
+                    users.push(newUser);
+                    localStorage.setItem('mockUsers', JSON.stringify(users));
+                    resolve(newUser);
+                }, 1000);
+            });
+        },
+        logout: async () => {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    localStorage.removeItem('currentUser');
+                    resolve();
+                }, 500);
+            });
+        },
+        updateMe: async (updates) => {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    const storedUser = localStorage.getItem('currentUser');
+                    if (!storedUser) {
+                        reject(new Error("Not authenticated"));
+                        return;
+                    }
+
+                    const currentUser = JSON.parse(storedUser);
+
+                    let updatedUser;
+                    // Handle notifications vs profile data - shallow merge updates
+                    if (updates && updates.notifications) {
+                        updatedUser = {
+                            ...currentUser,
+                            notifications: {
+                                ...(currentUser.notifications || {}),
+                                ...updates.notifications
+                            }
+                        };
+                    } else {
+                        updatedUser = { ...currentUser, ...updates };
+                    }
+
+                    // Update in list
+                    const users = getUsers();
+                    const index = users.findIndex(u => u.id === currentUser.id || u.email === currentUser.email);
+                    if (index !== -1) {
+                        // Apply same logic to stored user in list
+                        if (updates && updates.notifications) {
+                            users[index] = {
+                                ...users[index],
+                                notifications: {
+                                    ...(users[index].notifications || {}),
+                                    ...updates.notifications
+                                }
+                            };
+                        } else {
+                            users[index] = { ...users[index], ...updates };
+                        }
+                        localStorage.setItem('mockUsers', JSON.stringify(users));
+                    }
+
+                    // Update session
+                    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+
+                    resolve(updatedUser);
+                }, 800);
+            });
+        },
     },
     integrations: {
         Core: {
