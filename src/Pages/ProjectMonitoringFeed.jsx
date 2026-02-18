@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import Sidebar from '@/Components/Dashboard/Sidebar';
 import DashboardHeader from '@/Components/Dashboard/DashboardHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
+import { Button } from '@/Components/ui/button';
+import { Badge } from '@/Components/ui/badge';
 import {
     Activity,
     AlertTriangle,
@@ -17,7 +17,7 @@ import {
     Search,
     Shield
 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/Components/ui/input';
 
 const ACTIVITY_FEED = [
     {

@@ -6,9 +6,9 @@ import {
     DialogTitle,
     DialogDescription,
     DialogFooter
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from '@/Components/ui/dialog';
+import { Button } from '@/Components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { BrainCircuit, PenTool, X } from 'lucide-react';
 import QuizGame from './QuizGame';
 import ConnectDotsGame from './ConnectDotsGame';

@@ -11,20 +11,20 @@ import {
   List,
   CalendarDays
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from '@/Components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import Sidebar from '@/Components/Dashboard/Sidebar';
 import DashboardHeader from '@/Components/Dashboard/DashboardHeader';
 import EventCard from '@/Components/Dashboard/EventCard';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/Components/ui/skeleton';
 
 export default function Events() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
