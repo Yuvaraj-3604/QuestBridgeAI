@@ -1,0 +1,300 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import {
+  Search,
+  Filter,
+  Download,
+  MoreVertical,
+  Check,
+  X,
+  Trash2,
+  Mail,
+  Users
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Sidebar from '@/Components/Dashboard/Sidebar';
+import DashboardHeader from '@/Components/Dashboard/DashboardHeader';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const statusColors = {
+  pending: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+  approved: { bg: 'bg-green-100', text: 'text-green-700' },
+  checked_in: { bg: 'bg-blue-100', text: 'text-blue-700' },
+  cancelled: { bg: 'bg-red-100', text: 'text-red-700' }
+};
+
+const ticketColors = {
+  general: { bg: 'bg-gray-100', text: 'text-gray-700' },
+  vip: { bg: 'bg-purple-100', text: 'text-purple-700' },
+  speaker: { bg: 'bg-cyan-100', text: 'text-cyan-700' },
+  sponsor: { bg: 'bg-orange-100', text: 'text-orange-700' }
+};
+
+export default function Attendees() {
+  const queryClient = useQueryClient();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [eventFilter, setEventFilter] = useState('all');
+
+  const { data: registrations = [], isLoading: registrationsLoading } = useQuery({
+    queryKey: ['all-registrations'],
+    queryFn: () => base44.entities.Registration.list('-created_date')
+  });
+
+  const { data: events = [] } = useQuery({
+    queryKey: ['events'],
+    queryFn: () => base44.entities.Event.list()
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Registration.update(id, data),
+    onSuccess: () => queryClient.invalidateQueries(['all-registrations'])
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Registration.delete(id),
+    onSuccess: () => queryClient.invalidateQueries(['all-registrations'])
+  });
+
+  const getEventName = (eventId) => {
+    const event = events.find(e => e.id === eventId);
+    return event?.title || 'Unknown Event';
+  };
+
+  const filteredRegistrations = registrations.filter(reg => {
+    const matchesSearch =
+      reg.attendee_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      reg.attendee_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      reg.company?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || reg.status === statusFilter;
+    const matchesEvent = eventFilter === 'all' || reg.event_id === eventFilter;
+    return matchesSearch && matchesStatus && matchesEvent;
+  });
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+
+      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+        <DashboardHeader onMenuClick={() => setSidebarCollapsed(!sidebarCollapsed)} />
+
+        <main className="p-6">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Attendees</h1>
+              <p className="text-gray-500 mt-1">Manage all attendees across your events</p>
+            </div>
+            <Button variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </Button>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-2xl font-bold text-gray-900">{registrations.length}</p>
+                <p className="text-gray-500 text-sm">Total Attendees</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-2xl font-bold text-green-600">
+                  {registrations.filter(r => r.status === 'approved').length}
+                </p>
+                <p className="text-gray-500 text-sm">Approved</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-2xl font-bold text-yellow-600">
+                  {registrations.filter(r => r.status === 'pending').length}
+                </p>
+                <p className="text-gray-500 text-sm">Pending</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-2xl font-bold text-blue-600">
+                  {registrations.filter(r => r.status === 'checked_in').length}
+                </p>
+                <p className="text-gray-500 text-sm">Checked In</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Filters */}
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Input
+                    placeholder="Search attendees..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="checked_in">Checked In</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={eventFilter} onValueChange={setEventFilter}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Event" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Events</SelectItem>
+                    {events.map(event => (
+                      <SelectItem key={event.id} value={event.id}>{event.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Table */}
+          <Card>
+            <CardContent className="p-0">
+              {registrationsLoading ? (
+                <div className="p-6 space-y-4">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <Skeleton key={i} className="h-16" />
+                  ))}
+                </div>
+              ) : filteredRegistrations.length === 0 ? (
+                <div className="text-center py-16">
+                  <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No attendees found</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Attendee</TableHead>
+                      <TableHead>Event</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Ticket</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Registered</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRegistrations.map((reg) => {
+                      const statusStyle = statusColors[reg.status] || statusColors.pending;
+                      const ticketStyle = ticketColors[reg.ticket_type] || ticketColors.general;
+                      return (
+                        <TableRow key={reg.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{reg.attendee_name}</p>
+                              <p className="text-sm text-gray-500">{reg.attendee_email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <p className="text-sm truncate max-w-[150px]">{getEventName(reg.event_id)}</p>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p>{reg.company || '-'}</p>
+                              <p className="text-sm text-gray-500">{reg.job_title}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={`${ticketStyle.bg} ${ticketStyle.text} border-0 capitalize`}>
+                              {reg.ticket_type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={`${statusStyle.bg} ${statusStyle.text} border-0 capitalize`}>
+                              {reg.status?.replace('_', ' ')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <p className="text-sm text-gray-500">
+                              {reg.created_date ? format(new Date(reg.created_date), 'MMM dd, yyyy') : '-'}
+                            </p>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => updateMutation.mutate({ id: reg.id, data: { status: 'approved' } })}
+                                >
+                                  <Check className="w-4 h-4 mr-2" /> Approve
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => updateMutation.mutate({ id: reg.id, data: { status: 'checked_in' } })}
+                                >
+                                  <Check className="w-4 h-4 mr-2" /> Check In
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Mail className="w-4 h-4 mr-2" /> Send Email
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => deleteMutation.mutate(reg.id)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,67 @@
+{
+  "name": "Registration",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "Reference to the event"
+    },
+    "attendee_name": {
+      "type": "string"
+    },
+    "attendee_email": {
+      "type": "string"
+    },
+    "company": {
+      "type": "string"
+    },
+    "job_title": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "checked_in",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "ticket_type": {
+      "type": "string",
+      "enum": [
+        "general",
+        "vip",
+        "speaker",
+        "sponsor"
+      ],
+      "default": "general"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_id",
+    "attendee_name",
+    "attendee_email"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}
