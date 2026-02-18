@@ -21,7 +21,8 @@ import {
   Mail,
   Phone,
   Building,
-  Briefcase
+  Briefcase,
+  Copy
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
@@ -92,6 +93,15 @@ export default function EventDetails() {
     phone: '',
     ticket_type: 'general'
   });
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const { data: event, isLoading: eventLoading } = useQuery({
     queryKey: ['event', eventId],
@@ -197,14 +207,35 @@ export default function EventDetails() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share
-                    </Button>
-                    <Button variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit
-                    </Button>
+                    <Dialog open={showShareModal} onOpenChange={setShowShareModal}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
+                          <Share2 className="w-4 h-4 mr-2" />
+                          Share
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Share Event</DialogTitle>
+                        </DialogHeader>
+                        <div className="p-4 space-y-4">
+                          <p className="text-sm text-gray-500">Share this event link with your attendees.</p>
+                          <div className="flex items-center gap-2">
+                            <Input value={window.location.href} readOnly />
+                            <Button onClick={handleCopyLink} className="shrink-0">
+                              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Link to={createPageUrl(`CreateEvent?id=${eventId}`)}>
+                      <Button variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               </div>

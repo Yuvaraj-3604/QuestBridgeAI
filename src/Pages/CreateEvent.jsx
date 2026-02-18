@@ -50,7 +50,10 @@ const categories = [
 ];
 
 export default function CreateEvent() {
-  const navigate = useNavigate();
+  const urlParams = new URLSearchParams(window.location.search);
+  const eventId = urlParams.get('id');
+  const isEditing = !!eventId;
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -67,6 +70,66 @@ export default function CreateEvent() {
     cover_image: '',
     status: 'draft'
   });
+  const [submitAction, setSubmitAction] = useState('save');
+
+  // Fetch event data if editing
+  const { data: existingEvent } = useMutation({
+    mutationFn: async () => {
+      if (!eventId) return null;
+      const events = await base44.entities.Event.filter({ id: eventId });
+      return events[0];
+    },
+    onSuccess: (data) => {
+      if (data) {
+        setFormData({
+          title: data.title || '',
+          description: data.description || '',
+          event_type: data.event_type || 'in_person',
+          category: data.category || 'conference',
+          start_date: data.start_date || '',
+          end_date: data.end_date || '',
+          location: data.location || '',
+          virtual_link: data.virtual_link || '',
+          max_attendees: data.max_attendees || '',
+          ticket_price: data.ticket_price || 0,
+          is_free: data.is_free !== undefined ? data.is_free : true,
+          cover_image: data.cover_image || '',
+          status: data.status || 'draft'
+        });
+      }
+    },
+  });
+
+  // Use useEffect to trigger the fetch on mount if editing
+  React.useEffect(() => {
+    if (eventId) {
+      // We can't use useQuery correctly here because we need to populate state
+      // So we'll use a direct fetch pattern or this mutation hack
+      // Better approach: useQuery + useEffect
+      const fetchEvent = async () => {
+        const events = await base44.entities.Event.filter({ id: eventId });
+        const data = events[0];
+        if (data) {
+          setFormData({
+            title: data.title || '',
+            description: data.description || '',
+            event_type: data.event_type || 'in_person',
+            category: data.category || 'conference',
+            start_date: data.start_date || '',
+            end_date: data.end_date || '',
+            location: data.location || '',
+            virtual_link: data.virtual_link || '',
+            max_attendees: data.max_attendees || '',
+            ticket_price: data.ticket_price || 0,
+            is_free: data.is_free !== undefined ? data.is_free : true,
+            cover_image: data.cover_image || '',
+            status: data.status || 'draft'
+          });
+        }
+      };
+      fetchEvent();
+    }
+  }, [eventId]);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Event.create(data),
@@ -75,9 +138,22 @@ export default function CreateEvent() {
     }
   });
 
-  const handleSubmit = (e, status = 'draft') => {
+  const updateMutation = useMutation({
+    mutationFn: (data) => base44.entities.Event.update(eventId, data),
+    onSuccess: () => {
+      navigate(createPageUrl(`EventDetails?id=${eventId}`));
+    }
+  });
+
+  const handleFormSubmit = (e) => {
     e.preventDefault();
-    createMutation.mutate({ ...formData, status });
+    const status = submitAction === 'publish' ? 'published' : (isEditing ? formData.status : 'draft');
+    const dataToSubmit = { ...formData, status };
+    if (isEditing) {
+      updateMutation.mutate(dataToSubmit);
+    } else {
+      createMutation.mutate(dataToSubmit);
+    }
   };
 
   const handleImageUpload = async (e) => {
@@ -102,11 +178,11 @@ export default function CreateEvent() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
             </Link>
-            <h1 className="text-3xl font-bold text-gray-900">Create New Event</h1>
-            <p className="text-gray-500 mt-2">Fill in the details to create your event</p>
+            <h1 className="text-3xl font-bold text-gray-900">{isEditing ? 'Edit Event' : 'Create New Event'}</h1>
+            <p className="text-gray-500 mt-2">{isEditing ? 'Update the details of your event' : 'Fill in the details to create your event'}</p>
           </div>
 
-          <form onSubmit={(e) => handleSubmit(e, 'draft')}>
+          <form onSubmit={handleFormSubmit}>
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Main Content */}
               <div className="lg:col-span-2 space-y-6">
@@ -147,8 +223,8 @@ export default function CreateEvent() {
                             whileTap={{ scale: 0.98 }}
                             onClick={() => setFormData(prev => ({ ...prev, event_type: type.value }))}
                             className={`p-4 rounded-xl border-2 transition-all text-left ${formData.event_type === type.value
-                                ? 'border-cyan-500 bg-cyan-50'
-                                : 'border-gray-200 hover:border-gray-300'
+                              ? 'border-cyan-500 bg-cyan-50'
+                              : 'border-gray-200 hover:border-gray-300'
                               }`}
                           >
                             <type.icon className={`w-5 h-5 mb-2 ${formData.event_type === type.value ? 'text-cyan-600' : 'text-gray-400'
@@ -332,24 +408,25 @@ export default function CreateEvent() {
                 <div className="space-y-3">
                   <Button
                     type="submit"
+                    onClick={() => setSubmitAction('save')}
                     className="w-full bg-cyan-500 hover:bg-cyan-600"
-                    disabled={createMutation.isPending}
+                    disabled={createMutation.isPending || updateMutation.isPending}
                   >
-                    {createMutation.isPending ? (
+                    {createMutation.isPending || updateMutation.isPending ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
                       <Save className="w-4 h-4 mr-2" />
                     )}
-                    Save as Draft
+                    {isEditing ? 'Save Changes' : 'Save as Draft'}
                   </Button>
                   <Button
-                    type="button"
-                    onClick={(e) => handleSubmit(e, 'published')}
+                    type="submit"
+                    onClick={() => setSubmitAction('publish')}
                     variant="outline"
                     className="w-full border-cyan-500 text-cyan-600 hover:bg-cyan-50"
-                    disabled={createMutation.isPending}
+                    disabled={createMutation.isPending || updateMutation.isPending}
                   >
-                    Save & Publish
+                    {isEditing ? 'Update & Publish' : 'Save & Publish'}
                   </Button>
                 </div>
               </div>

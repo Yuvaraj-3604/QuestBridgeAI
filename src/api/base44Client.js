@@ -3,36 +3,14 @@
 const mockEvents = [
     {
         id: 1,
-        title: 'Tech Innovation Summit 2025',
+        title: 'Tech Innovation Summit 2026',
         description: 'Join industry leaders and innovators for a full day of cutting-edge technology discussions, networking opportunities, and hands-on workshops. Explore the latest trends in AI, blockchain, and sustainable tech.',
-        start_date: '2025-12-15T09:00:00',
-        location: 'San Francisco Convention Center, CA',
+        start_date: '2026-02-17T09:00:00',
+        location: 'SNS College Of Engineering , Coimbatore',
         status: 'published',
         event_type: 'hybrid',
         cover_image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
         max_attendees: 500
-    },
-    {
-        id: 2,
-        title: 'Product Design Masterclass',
-        description: 'A comprehensive workshop on modern product design principles, UX research methods, and design thinking. Perfect for designers looking to level up their skills.',
-        start_date: '2025-12-12T14:00:00',
-        location: 'Virtual Event',
-        status: 'published',
-        event_type: 'virtual',
-        cover_image: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-        max_attendees: 100
-    },
-    {
-        id: 3,
-        title: 'Startup Networking Night',
-        description: 'Connect with fellow entrepreneurs, investors, and mentors in an evening of networking and knowledge sharing. Pitch your ideas and find your next co-founder!',
-        start_date: '2025-12-12T18:00:00',
-        location: 'WeWork Downtown, New York, NY',
-        status: 'published',
-        event_type: 'in_person',
-        cover_image: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-        max_attendees: 150
     }
 ];
 
@@ -61,8 +39,13 @@ export const base44 = {
             if (storedUser) {
                 return JSON.parse(storedUser);
             }
-            // Return default user if not logged in (to prevent breaking)
-            return { full_name: 'John Doe', email: 'john@example.com' };
+
+            // Auto-login as the first default user if not logged in (for dev convenience)
+            const users = getUsers();
+            const defaultUser = users[0];
+
+            localStorage.setItem('currentUser', JSON.stringify(defaultUser));
+            return defaultUser;
         },
         login: async (email, password) => {
             return new Promise((resolve, reject) => {
@@ -134,29 +117,33 @@ export const base44 = {
                         updatedUser = { ...currentUser, ...updates };
                     }
 
-                    // Update in list
-                    const users = getUsers();
-                    const index = users.findIndex(u => u.id === currentUser.id || u.email === currentUser.email);
-                    if (index !== -1) {
-                        // Apply same logic to stored user in list
-                        if (updates && updates.notifications) {
-                            users[index] = {
-                                ...users[index],
-                                notifications: {
-                                    ...(users[index].notifications || {}),
-                                    ...updates.notifications
-                                }
-                            };
-                        } else {
-                            users[index] = { ...users[index], ...updates };
+                    try {
+                        // Update in list
+                        const users = getUsers();
+                        const index = users.findIndex(u => u.id === currentUser.id || u.email === currentUser.email);
+                        if (index !== -1) {
+                            // Apply same logic to stored user in list
+                            if (updates && updates.notifications) {
+                                users[index] = {
+                                    ...users[index],
+                                    notifications: {
+                                        ...(users[index].notifications || {}),
+                                        ...updates.notifications
+                                    }
+                                };
+                            } else {
+                                users[index] = { ...users[index], ...updates };
+                            }
+                            localStorage.setItem('mockUsers', JSON.stringify(users));
                         }
-                        localStorage.setItem('mockUsers', JSON.stringify(users));
+
+                        // Update session
+                        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                        resolve(updatedUser);
+                    } catch (err) {
+                        console.error("Storage error:", err);
+                        reject(new Error("Failed to save changes. Storage might be full."));
                     }
-
-                    // Update session
-                    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-
-                    resolve(updatedUser);
                 }, 800);
             });
         },
@@ -188,7 +175,14 @@ export const base44 = {
                 mockEvents.unshift(newEvent); // Add to beginning
                 return newEvent;
             },
-            update: async () => { },
+            update: async (id, data) => {
+                const index = mockEvents.findIndex(e => e.id == id);
+                if (index !== -1) {
+                    mockEvents[index] = { ...mockEvents[index], ...data };
+                    return mockEvents[index];
+                }
+                throw new Error("Event not found");
+            },
             delete: async () => { },
         },
         Registration: {

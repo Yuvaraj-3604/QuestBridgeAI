@@ -75,12 +75,12 @@ export default function Analytics() {
 
   // Monthly trend (mock data - in real scenario would calculate from actual dates)
   const monthlyData = [
-    { month: 'Jan', events: 2, registrations: 45 },
-    { month: 'Feb', events: 3, registrations: 78 },
-    { month: 'Mar', events: 5, registrations: 120 },
-    { month: 'Apr', events: 4, registrations: 95 },
-    { month: 'May', events: 6, registrations: 150 },
-    { month: 'Jun', events: totalEvents, registrations: totalRegistrations }
+    { month: 'Jan', events: 0, registrations: 0 },
+    { month: 'Feb', events: 1, registrations: 45 },
+    { month: 'Mar', events: 0, registrations: 0 },
+    { month: 'Apr', events: 0, registrations: 0 },
+    { month: 'May', events: 0, registrations: 0 },
+    { month: 'Jun', events: 0, registrations: 0 }
   ];
 
   return (

@@ -55,6 +55,9 @@ export default function Settings() {
           website: userData.website || '',
           avatar: userData.avatar || ''
         });
+        if (userData.notifications) {
+          setNotifications(prev => ({ ...prev, ...userData.notifications }));
+        }
       } catch (e) {
         // User not logged in
       }
@@ -68,6 +71,13 @@ export default function Settings() {
       toast({
         title: "Settings saved",
         description: "Your settings have been updated successfully."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error saving settings",
+        description: error.message || "Something went wrong.",
+        variant: "destructive"
       });
     }
   });
