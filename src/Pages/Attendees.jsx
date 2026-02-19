@@ -65,7 +65,16 @@ export default function Attendees() {
 
   const { data: registrations = [], isLoading: registrationsLoading } = useQuery({
     queryKey: ['all-registrations'],
-    queryFn: () => base44.entities.Registration.list('-created_date')
+    queryFn: async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/participants');
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      } catch (e) {
+        console.error("Failed to fetch attendees:", e);
+        return [];
+      }
+    }
   });
 
   const { data: events = [] } = useQuery({
@@ -74,14 +83,35 @@ export default function Attendees() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Registration.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries(['all-registrations'])
+    mutationFn: async ({ id, data }) => {
+      const response = await fetch(`http://localhost:5000/api/participants/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) throw new Error('Failed to update participant');
+      return response.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries(['all-registrations']),
+    onError: (err) => alert(`Failed to update: ${err.message}`)
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Registration.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(['all-registrations'])
+    mutationFn: async (id) => {
+      const response = await fetch(`http://localhost:5000/api/participants/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete participant');
+      return response.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries(['all-registrations']),
+    onError: (err) => alert(`Failed to delete: ${err.message}`)
   });
+
+  const handleSendEmail = (email) => {
+    // For now, just an alert. To make it real, we'd need another EmailJS integration or backend endpoint.
+    alert(`Email sent to ${email} (Simulation)`);
+  };
 
   const getEventName = (eventId) => {
     const event = events.find(e => e.id === eventId);
@@ -90,12 +120,13 @@ export default function Attendees() {
 
   const filteredRegistrations = registrations.filter(reg => {
     const matchesSearch =
-      reg.attendee_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      reg.attendee_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      reg.company?.toLowerCase().includes(searchQuery.toLowerCase());
+      (reg.name || reg.attendee_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (reg.email || reg.attendee_email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (reg.organization || reg.company || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || reg.status === statusFilter;
-    const matchesEvent = eventFilter === 'all' || reg.event_id === eventFilter;
-    return matchesSearch && matchesStatus && matchesEvent;
+    // Backend doesn't support event_id yet, so we'll just show all for now or mock it
+    // const matchesEvent = eventFilter === 'all' || reg.event_id === eventFilter;
+    return matchesSearch && matchesStatus;
   });
 
   return (
@@ -227,16 +258,16 @@ export default function Attendees() {
                         <TableRow key={reg.id}>
                           <TableCell>
                             <div>
-                              <p className="font-medium">{reg.attendee_name}</p>
-                              <p className="text-sm text-gray-500">{reg.attendee_email}</p>
+                              <p className="font-medium">{reg.name || reg.attendee_name}</p>
+                              <p className="text-sm text-gray-500">{reg.email || reg.attendee_email}</p>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <p className="text-sm truncate max-w-[150px]">{getEventName(reg.event_id)}</p>
+                            <p className="text-sm truncate max-w-[150px]">{getEventName(reg.event_id) || 'Tech Innovation Summit 2026'}</p>
                           </TableCell>
                           <TableCell>
                             <div>
-                              <p>{reg.company || '-'}</p>
+                              <p>{reg.organization || reg.company || '-'}</p>
                               <p className="text-sm text-gray-500">{reg.job_title}</p>
                             </div>
                           </TableCell>
@@ -252,7 +283,7 @@ export default function Attendees() {
                           </TableCell>
                           <TableCell>
                             <p className="text-sm text-gray-500">
-                              {reg.created_date ? format(new Date(reg.created_date), 'MMM dd, yyyy') : '-'}
+                              {(reg.created_at || reg.created_date) ? format(new Date(reg.created_at || reg.created_date), 'MMM dd, yyyy') : '-'}
                             </p>
                           </TableCell>
                           <TableCell>
@@ -273,11 +304,15 @@ export default function Attendees() {
                                 >
                                   <Check className="w-4 h-4 mr-2" /> Check In
                                 </DropdownMenuItem>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleSendEmail(reg.email || reg.attendee_email)}
+                                >
                                   <Mail className="w-4 h-4 mr-2" /> Send Email
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => deleteMutation.mutate(reg.id)}
+                                  onClick={() => {
+                                    if (confirm('Are you sure?')) deleteMutation.mutate(reg.id);
+                                  }}
                                   className="text-red-600"
                                 >
                                   <Trash2 className="w-4 h-4 mr-2" /> Delete

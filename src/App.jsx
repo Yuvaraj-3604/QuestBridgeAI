@@ -16,6 +16,7 @@ import ProjectMonitoringFeed from '@/Pages/ProjectMonitoringFeed';
 import Login from '@/Pages/Login';
 import Signup from '@/Pages/Signup';
 import ForgotPassword from '@/Pages/ForgotPassword';
+import BookDemo from '@/Pages/BookDemo';
 
 function App() {
     return (
@@ -36,6 +37,7 @@ function App() {
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/Settings" element={<Settings />} />
+                <Route path="/book-demo" element={<BookDemo />} />
             </Routes>
         </Router>
     );

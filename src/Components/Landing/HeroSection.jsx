@@ -92,7 +92,7 @@ export default function HeroSection() {
               placeholder="Enter your work email"
               className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-14 text-lg flex-1"
             />
-            <Link to={createPageUrl('Dashboard')}>
+            <Link to="/book-demo">
               <Button className="bg-cyan-500 hover:bg-cyan-600 h-14 px-8 text-lg">
                 Book a Demo
                 <ArrowRight className="ml-2 w-5 h-5" />

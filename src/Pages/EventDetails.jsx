@@ -94,6 +94,8 @@ export default function EventDetails() {
     ticket_type: 'general'
   });
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showZoomModal, setShowZoomModal] = useState(false);
+  const [zoomLink, setZoomLink] = useState('');
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = () => {
@@ -114,12 +116,37 @@ export default function EventDetails() {
 
   const { data: registrations = [], isLoading: registrationsLoading } = useQuery({
     queryKey: ['registrations', eventId],
-    queryFn: () => base44.entities.Registration.filter({ event_id: eventId }),
+    queryFn: async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/participants');
+        const data = await res.json();
+        // Filter locally for now since backend doesn't support event_id yet
+        // Or just return all since we are in a demo environment
+        return Array.isArray(data) ? data : [];
+      } catch (e) {
+        console.error(e);
+        return [];
+      }
+    },
     enabled: !!eventId
   });
 
   const addRegistrationMutation = useMutation({
-    mutationFn: (data) => base44.entities.Registration.create({ ...data, event_id: eventId }),
+    mutationFn: async (data) => {
+      const response = await fetch('http://localhost:5000/api/participants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.attendee_name,
+          email: data.attendee_email,
+          organization: data.company,
+          phone: data.phone,
+          ticket_type: data.ticket_type
+        })
+      });
+      if (!response.ok) throw new Error('Failed to add attendee');
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['registrations', eventId]);
       setShowAddAttendee(false);
@@ -135,14 +162,60 @@ export default function EventDetails() {
   });
 
   const updateRegistrationMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Registration.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries(['registrations', eventId])
+    mutationFn: async ({ id, data }) => {
+      const response = await fetch(`http://localhost:5000/api/participants/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) throw new Error('Failed to update participant');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['registrations', eventId]);
+    },
+    onError: (err) => {
+      alert(`Failed to update: ${err.message}`);
+    }
   });
 
   const deleteRegistrationMutation = useMutation({
-    mutationFn: (id) => base44.entities.Registration.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(['registrations', eventId])
+    mutationFn: async (id) => {
+      const response = await fetch(`http://localhost:5000/api/participants/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete participant');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['registrations', eventId]);
+    },
+    onError: (err) => {
+      alert(`Failed to delete: ${err.message}`);
+    }
   });
+
+  const updateEventMutation = useMutation({
+    mutationFn: (data) => base44.entities.Event.update(eventId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['event', eventId]);
+      setShowZoomModal(false);
+    }
+  });
+
+  const handleZoomAction = () => {
+    if (event.virtual_link && event.virtual_link.includes('zoom.us')) {
+      window.open(event.virtual_link, '_blank');
+    } else {
+      // Default to the provided link if none exists
+      setZoomLink(event.virtual_link || 'https://app.zoom.us/wc/78791925721/start?fromPWA=1&pwd=3mXgk8iV0smy7sFU7ACxJRbqEfbTa4.1');
+      setShowZoomModal(true);
+    }
+  };
+
+  const saveZoomLink = () => {
+    updateEventMutation.mutate({ virtual_link: zoomLink });
+  };
 
   if (eventLoading) {
     return (
@@ -207,6 +280,38 @@ export default function EventDetails() {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <Button
+                      onClick={handleZoomAction}
+                      className="bg-[#2D8CFF] hover:bg-[#1E75E0] text-white border-0"
+                    >
+                      <Video className="w-4 h-4 mr-2" />
+                      {event.virtual_link && event.virtual_link.includes('zoom.us') ? 'Launch Zoom' : 'Host on Zoom'}
+                    </Button>
+
+                    <Dialog open={showZoomModal} onOpenChange={setShowZoomModal}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Host on Zoom</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <p className="text-sm text-gray-500">
+                            Enter your Zoom meeting link below to host this event virtually.
+                          </p>
+                          <div className="space-y-2">
+                            <Label>Zoom Meeting URL</Label>
+                            <Input
+                              placeholder="https://zoom.us/j/..."
+                              value={zoomLink}
+                              onChange={(e) => setZoomLink(e.target.value)}
+                            />
+                          </div>
+                          <Button onClick={saveZoomLink} className="w-full bg-[#2D8CFF] hover:bg-[#1E75E0]">
+                            Save Zoom Link
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
                     <Dialog open={showShareModal} onOpenChange={setShowShareModal}>
                       <DialogTrigger asChild>
                         <Button variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
@@ -440,13 +545,13 @@ export default function EventDetails() {
                             <TableRow key={reg.id}>
                               <TableCell>
                                 <div>
-                                  <p className="font-medium">{reg.attendee_name}</p>
-                                  <p className="text-sm text-gray-500">{reg.attendee_email}</p>
+                                  <p className="font-medium">{reg.name || reg.attendee_name}</p>
+                                  <p className="text-sm text-gray-500">{reg.email || reg.attendee_email}</p>
                                 </div>
                               </TableCell>
                               <TableCell>
                                 <div>
-                                  <p>{reg.company || '-'}</p>
+                                  <p>{reg.organization || reg.company || '-'}</p>
                                   <p className="text-sm text-gray-500">{reg.job_title}</p>
                                 </div>
                               </TableCell>
@@ -469,17 +574,28 @@ export default function EventDetails() {
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
                                     <DropdownMenuItem
-                                      onClick={() => updateRegistrationMutation.mutate({ id: reg.id, data: { status: 'approved' } })}
+                                      onClick={(e) => {
+                                        e.stopPropagation(); // Ensure event doesn't bubble weirdly
+                                        updateRegistrationMutation.mutate({ id: reg.id, data: { status: 'approved' } });
+                                      }}
                                     >
                                       <Check className="w-4 h-4 mr-2" /> Approve
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                      onClick={() => updateRegistrationMutation.mutate({ id: reg.id, data: { status: 'checked_in' } })}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateRegistrationMutation.mutate({ id: reg.id, data: { status: 'checked_in' } });
+                                      }}
                                     >
                                       <Check className="w-4 h-4 mr-2" /> Check In
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                      onClick={() => deleteRegistrationMutation.mutate(reg.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (confirm('Are you sure you want to delete this attendee?')) {
+                                          deleteRegistrationMutation.mutate(reg.id);
+                                        }
+                                      }}
                                       className="text-red-600"
                                     >
                                       <Trash2 className="w-4 h-4 mr-2" /> Delete

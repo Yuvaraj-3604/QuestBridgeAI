@@ -51,9 +51,10 @@ export default function QuizGame({ onComplete }) {
         setSelectedOption(index);
         const correct = index === questions[currentQuestion].answer;
         setIsCorrect(correct);
+        const newScore = correct ? score + 1 : score;
 
         setTimeout(() => {
-            if (correct) setScore(score + 1);
+            setScore(newScore);
 
             if (currentQuestion < questions.length - 1) {
                 setCurrentQuestion(currentQuestion + 1);
@@ -61,7 +62,23 @@ export default function QuizGame({ onComplete }) {
                 setIsCorrect(null);
             } else {
                 setShowResult(true);
-                if (onComplete) onComplete(score + (correct ? 1 : 0));
+
+                // Save to Backend
+                fetch('http://localhost:5000/api/engagement', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        participant_email: localStorage.getItem('user_email') || 'anonymous@questbridge.com',
+                        activity_type: 'Quiz Game',
+                        details: { total_questions: questions.length },
+                        score: newScore
+                    })
+                })
+                    .then(res => res.json())
+                    .then(data => console.log('Engagement logged:', data))
+                    .catch(err => console.error('Failed to log engagement:', err));
+
+                if (onComplete) onComplete(newScore);
             }
         }, 1000);
     };
@@ -120,10 +137,10 @@ export default function QuizGame({ onComplete }) {
                             onClick={() => handleAnswer(index)}
                             disabled={selectedOption !== null}
                             className={`p-4 rounded-lg text-left transition-colors border ${selectedOption === index
-                                    ? isCorrect
-                                        ? 'bg-green-100 border-green-500 text-green-700'
-                                        : 'bg-red-100 border-red-500 text-red-700'
-                                    : 'bg-white hover:bg-gray-50 border-gray-200'
+                                ? isCorrect
+                                    ? 'bg-green-100 border-green-500 text-green-700'
+                                    : 'bg-red-100 border-red-500 text-red-700'
+                                : 'bg-white hover:bg-gray-50 border-gray-200'
                                 }`}
                         >
                             <div className="flex items-center justify-between">
