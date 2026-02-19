@@ -3,6 +3,7 @@ import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/Components/ui/card';
 import { CheckCircle2, XCircle, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_URL } from '../../config';
 
 const questions = [
     {
@@ -64,7 +65,7 @@ export default function QuizGame({ onComplete }) {
                 setShowResult(true);
 
                 // Save to Backend
-                fetch('http://localhost:5000/api/engagement', {
+                fetch(`${API_URL}/api/engagement`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

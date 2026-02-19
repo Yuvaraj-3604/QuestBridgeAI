@@ -64,6 +64,7 @@ import { Skeleton } from '@/Components/ui/skeleton';
 import EngagementManager from '@/Components/Engagement/EngagementManager';
 import QuizGame from '@/Components/Engagement/QuizGame';
 import ConnectDotsGame from '@/Components/Engagement/ConnectDotsGame';
+import { API_URL } from '../config';
 
 const statusColors = {
   pending: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
@@ -118,7 +119,7 @@ export default function EventDetails() {
     queryKey: ['registrations', eventId],
     queryFn: async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/participants');
+        const res = await fetch(`${API_URL}/api/participants`);
         const data = await res.json();
         // Filter locally for now since backend doesn't support event_id yet
         // Or just return all since we are in a demo environment
@@ -133,7 +134,7 @@ export default function EventDetails() {
 
   const addRegistrationMutation = useMutation({
     mutationFn: async (data) => {
-      const response = await fetch('http://localhost:5000/api/participants', {
+      const response = await fetch(`${API_URL}/api/participants`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -163,7 +164,7 @@ export default function EventDetails() {
 
   const updateRegistrationMutation = useMutation({
     mutationFn: async ({ id, data }) => {
-      const response = await fetch(`http://localhost:5000/api/participants/${id}`, {
+      const response = await fetch(`${API_URL}/api/participants/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -181,7 +182,7 @@ export default function EventDetails() {
 
   const deleteRegistrationMutation = useMutation({
     mutationFn: async (id) => {
-      const response = await fetch(`http://localhost:5000/api/participants/${id}`, {
+      const response = await fetch(`${API_URL}/api/participants/${id}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Failed to delete participant');

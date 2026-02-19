@@ -18,6 +18,7 @@ import {
     isToday
 } from 'date-fns';
 import emailjs from '@emailjs/browser';
+import { API_URL } from '../config';
 
 const BookDemo = () => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -88,7 +89,7 @@ const BookDemo = () => {
 
 
         // 1. Save to Backend Database
-        fetch('http://localhost:5000/api/participants', {
+        fetch(`${API_URL}/api/participants`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -99,7 +100,10 @@ const BookDemo = () => {
                 ticket_type: 'general' // Default or mapped from somewhere
             })
         })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to save to database');
+                return res.json();
+            })
             .then(data => {
                 console.log("Saved to database:", data);
 

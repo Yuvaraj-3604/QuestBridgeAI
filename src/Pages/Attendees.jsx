@@ -41,6 +41,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import Sidebar from '@/Components/Dashboard/Sidebar';
 import DashboardHeader from '@/Components/Dashboard/DashboardHeader';
 import { Skeleton } from '@/Components/ui/skeleton';
+import { API_URL } from '../config';
 
 const statusColors = {
   pending: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
@@ -67,7 +68,7 @@ export default function Attendees() {
     queryKey: ['all-registrations'],
     queryFn: async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/participants');
+        const res = await fetch(`${API_URL}/api/participants`);
         const data = await res.json();
         return Array.isArray(data) ? data : [];
       } catch (e) {
@@ -84,7 +85,7 @@ export default function Attendees() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }) => {
-      const response = await fetch(`http://localhost:5000/api/participants/${id}`, {
+      const response = await fetch(`${API_URL}/api/participants/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -98,7 +99,7 @@ export default function Attendees() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      const response = await fetch(`http://localhost:5000/api/participants/${id}`, {
+      const response = await fetch(`${API_URL}/api/participants/${id}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Failed to delete participant');

@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import Sidebar from '@/Components/Dashboard/Sidebar';
 import DashboardHeader from '@/Components/Dashboard/DashboardHeader';
 import { useToast } from '@/Components/ui/use-toast';
+import { API_URL } from '../config';
 
 const emailTemplates = [
   { id: 'invitation', name: 'Event Invitation', desc: 'Invite attendees to your event' },
@@ -68,7 +69,7 @@ export default function Marketing() {
     queryKey: ['registrations'],
     queryFn: async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/participants');
+        const res = await fetch(`${API_URL}/api/participants`);
         const data = await res.json();
         return Array.isArray(data) ? data : [];
       } catch (e) {
