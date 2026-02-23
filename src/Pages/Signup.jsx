@@ -48,7 +48,15 @@ export default function Signup() {
                 })
             });
 
-            const data = await response.json();
+            const contentType = response.headers.get("content-type");
+            let data = {};
+            if (contentType && contentType.includes("application/json")) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                console.error("Non-JSON response:", text);
+                throw new Error("Server error: Received invalid response format.");
+            }
 
             if (!response.ok) {
                 throw new Error(data.error || 'Signup failed');
