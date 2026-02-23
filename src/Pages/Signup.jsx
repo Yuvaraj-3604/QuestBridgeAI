@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 
 import { base44 } from '@/api/base44Client';
+import { API_URL } from '../config';
 
 export default function Signup() {
     const [formData, setFormData] = useState({
@@ -37,11 +38,22 @@ export default function Signup() {
         }
 
         try {
-            await base44.auth.signup({
-                full_name: formData.name,
-                email: formData.email,
-                password: formData.password
+            const response = await fetch(`${API_URL}/api/auth/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: formData.name,
+                    email: formData.email,
+                    password: formData.password
+                })
             });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Signup failed');
+            }
+
             // Redirect to login page after successful signup, passing the credentials
             navigate('/login', {
                 state: {
@@ -50,7 +62,7 @@ export default function Signup() {
                 }
             });
         } catch (err) {
-            setError("Failed to create account. Please try again.");
+            setError(err.message || "Failed to create account. Please try again.");
         } finally {
             setLoading(false);
         }

@@ -17,11 +17,15 @@ import {
   Legend
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
+import { Button } from '@/Components/ui/button';
 import {
   TrendingUp,
   Users,
   CalendarDays,
-  Eye
+  Eye,
+  Download,
+  Trophy,
+  FileSpreadsheet
 } from 'lucide-react';
 import Sidebar from '@/Components/Dashboard/Sidebar';
 import DashboardHeader from '@/Components/Dashboard/DashboardHeader';
@@ -91,9 +95,34 @@ export default function Analytics() {
         <DashboardHeader onMenuClick={() => setSidebarCollapsed(!sidebarCollapsed)} />
 
         <main className="p-6">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
-            <p className="text-gray-500 mt-1">Track your event performance</p>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
+              <p className="text-gray-500 mt-1">Track your event performance</p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/download/participants`, '_blank')}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Attendees CSV
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/download/engagement`, '_blank')}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Engagement CSV
+              </Button>
+              <Button
+                className="bg-cyan-600 hover:bg-cyan-700"
+                onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/download/leaderboard`, '_blank')}
+              >
+                <Trophy className="w-4 h-4 mr-2" />
+                Leaderboard CSV
+              </Button>
+            </div>
           </div>
 
           {/* Stats */}

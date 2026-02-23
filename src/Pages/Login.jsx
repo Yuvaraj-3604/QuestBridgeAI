@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { API_URL } from '../config';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -33,7 +34,21 @@ export default function Login() {
         setError('');
 
         try {
-            await base44.auth.login(email, password);
+            const response = await fetch(`${API_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Login failed');
+            }
+
+            // Save user to local storage for session (optional but common)
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
+
             navigate('/Dashboard');
         } catch (err) {
             setError(err.message);

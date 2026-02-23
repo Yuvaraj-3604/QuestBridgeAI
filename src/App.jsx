@@ -17,10 +17,12 @@ import Login from '@/Pages/Login';
 import Signup from '@/Pages/Signup';
 import ForgotPassword from '@/Pages/ForgotPassword';
 import BookDemo from '@/Pages/BookDemo';
+import { Toaster } from '@/Components/ui/toaster';
 
 function App() {
     return (
         <Router>
+            <Toaster />
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/Dashboard" element={<Dashboard />} />

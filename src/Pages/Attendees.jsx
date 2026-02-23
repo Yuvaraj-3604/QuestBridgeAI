@@ -41,6 +41,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import Sidebar from '@/Components/Dashboard/Sidebar';
 import DashboardHeader from '@/Components/Dashboard/DashboardHeader';
 import { Skeleton } from '@/Components/ui/skeleton';
+import { useToast } from '@/Components/ui/use-toast';
 import { API_URL } from '../config';
 
 const statusColors = {
@@ -58,6 +59,7 @@ const ticketColors = {
 };
 
 export default function Attendees() {
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,9 +111,39 @@ export default function Attendees() {
     onError: (err) => alert(`Failed to delete: ${err.message}`)
   });
 
-  const handleSendEmail = (email) => {
-    // For now, just an alert. To make it real, we'd need another EmailJS integration or backend endpoint.
-    alert(`Email sent to ${email} (Simulation)`);
+  const handleSendEmail = async (email) => {
+    toast({
+      title: "Sending Invitation...",
+      description: `Sending event details to ${email}`,
+    });
+
+    try {
+      const response = await fetch(`${API_URL}/api/marketing/single-send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          subject: "Exclusive Invitation: Tech Innovation Summit 2026",
+          body: "Hello! We are excited to invite you to our upcoming event. More details will follow soon."
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        toast({
+          title: "Email Sent!",
+          description: data.message || `Successfully sent to ${email}`,
+        });
+      } else {
+        throw new Error(data.error || 'Failed to send email');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   const getEventName = (eventId) => {
@@ -144,7 +176,10 @@ export default function Attendees() {
               <h1 className="text-3xl font-bold text-gray-900">Attendees</h1>
               <p className="text-gray-500 mt-1">Manage all attendees across your events</p>
             </div>
-            <Button variant="outline">
+            <Button
+              variant="outline"
+              onClick={() => window.open(`${API_URL}/api/download/participants`, '_blank')}
+            >
               <Download className="w-4 h-4 mr-2" />
               Export
             </Button>

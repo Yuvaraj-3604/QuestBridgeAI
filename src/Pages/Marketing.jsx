@@ -110,20 +110,50 @@ export default function Marketing() {
     setIsGenerating(false);
   };
 
+  const [isSending, setIsSending] = useState(false);
+
   const sendEmails = async () => {
-    // Mock sending process
+    console.log('Sending to:', `${API_URL}/api/marketing/send`);
+    if (!emailSubject || !emailBody) return;
+
+    setIsSending(true);
     toast({
       title: "Sending Emails...",
       description: "Please wait while we dispatch your campaign.",
     });
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      const response = await fetch(`${API_URL}/api/marketing/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          subject: emailSubject,
+          body: emailBody,
+          eventId: selectedEvent
+        }),
+      });
 
-    toast({
-      title: "Emails Sent!",
-      description: `Successfully sent ${registrations.length} emails.`
-    });
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Emails Sent!",
+          description: `Successfully sent ${data.recipientCount} emails.`
+        });
+      } else {
+        throw new Error(data.error || 'Failed to send emails');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   // For this demo, we assume all participants belong to the selected event (or any event)
@@ -247,10 +277,14 @@ export default function Marketing() {
               {/* Send Button */}
               <Button
                 onClick={sendEmails}
-                disabled={!emailSubject || !emailBody || recipientCount === 0}
+                disabled={!emailSubject || !emailBody || recipientCount === 0 || isSending}
                 className="w-full bg-cyan-500 hover:bg-cyan-600 h-14 text-lg"
               >
-                <Send className="w-5 h-5 mr-2" />
+                {isSending ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5 mr-2" />
+                )}
                 Send Email Campaign
               </Button>
 

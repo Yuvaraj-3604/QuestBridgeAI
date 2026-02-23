@@ -22,7 +22,9 @@ import {
   Phone,
   Building,
   Briefcase,
-  Copy
+  Copy,
+  Download,
+  Trophy
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
@@ -97,6 +99,7 @@ export default function EventDetails() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showZoomModal, setShowZoomModal] = useState(false);
   const [zoomLink, setZoomLink] = useState('');
+  const [isGeneratingZoom, setIsGeneratingZoom] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = () => {
@@ -204,6 +207,35 @@ export default function EventDetails() {
     }
   });
 
+  const generateZoomMeetingMutation = useMutation({
+    mutationFn: async () => {
+      setIsGeneratingZoom(true);
+      try {
+        const response = await fetch(`${API_URL}/api/zoom/create-meeting`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: event.title,
+            startTime: event.start_date,
+            duration: 60 // Default duration
+          })
+        });
+        if (!response.ok) throw new Error('Failed to generate Zoom meeting');
+        return response.json();
+      } finally {
+        setIsGeneratingZoom(false);
+      }
+    },
+    onSuccess: (data) => {
+      setZoomLink(data.meeting_url);
+      // Auto-save the generated link
+      updateEventMutation.mutate({ virtual_link: data.meeting_url });
+    },
+    onError: (err) => {
+      alert(`Error generating meeting: ${err.message}`);
+    }
+  });
+
   const handleZoomAction = () => {
     if (event.virtual_link && event.virtual_link.includes('zoom.us')) {
       window.open(event.virtual_link, '_blank');
@@ -296,7 +328,7 @@ export default function EventDetails() {
                         </DialogHeader>
                         <div className="space-y-4 py-4">
                           <p className="text-sm text-gray-500">
-                            Enter your Zoom meeting link below to host this event virtually.
+                            You can manually enter a Zoom link or generate one automatically using the integrated Zoom API.
                           </p>
                           <div className="space-y-2">
                             <Label>Zoom Meeting URL</Label>
@@ -306,9 +338,27 @@ export default function EventDetails() {
                               onChange={(e) => setZoomLink(e.target.value)}
                             />
                           </div>
-                          <Button onClick={saveZoomLink} className="w-full bg-[#2D8CFF] hover:bg-[#1E75E0]">
-                            Save Zoom Link
-                          </Button>
+                          <div className="flex flex-col gap-2">
+                            <Button onClick={saveZoomLink} className="w-full bg-[#2D8CFF] hover:bg-[#1E75E0]">
+                              Save Zoom Link
+                            </Button>
+                            <div className="relative">
+                              <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t" />
+                              </div>
+                              <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-white px-2 text-muted-foreground">Or</span>
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              onClick={() => generateZoomMeetingMutation.mutate()}
+                              disabled={isGeneratingZoom}
+                              className="w-full border-[#2D8CFF] text-[#2D8CFF] hover:bg-blue-50"
+                            >
+                              {isGeneratingZoom ? 'Generating...' : 'Auto-generate Zoom Meeting'}
+                            </Button>
+                          </div>
                         </div>
                       </DialogContent>
                     </Dialog>
@@ -629,9 +679,31 @@ export default function EventDetails() {
 
             <TabsContent value="engagement">
               <Card>
-                <CardHeader>
-                  <CardTitle>Attendee Engagement</CardTitle>
-                  <p className="text-gray-500">Preview the engagement activities available to attendees.</p>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Attendee Engagement</CardTitle>
+                    <p className="text-gray-500">Preview activities and download participation reports.</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`${API_URL}/api/download/engagement`, '_blank')}
+                      className="border-cyan-200 text-cyan-700 hover:bg-cyan-50"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Engagement CSV
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`${API_URL}/api/download/leaderboard`, '_blank')}
+                      className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                    >
+                      <Trophy className="w-4 h-4 mr-2" />
+                      Leaderboard CSV
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid md:grid-cols-2 gap-8">
