@@ -1,6 +1,7 @@
 
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
@@ -43,11 +44,28 @@ app.use((req, res, next) => {
 });
 
 // Initialize Database
-const db = new sqlite3.Database(path.join(__dirname, 'questbridge.sqlite'), (err) => {
+const DB_SOURCE = path.join(__dirname, 'questbridge.sqlite');
+const DB_PATH = process.env.NODE_ENV === 'production'
+    ? path.join('/tmp', 'questbridge.sqlite')
+    : DB_SOURCE;
+
+// In production, copy the bundled DB to /tmp so it's writable
+if (process.env.NODE_ENV === 'production') {
+    try {
+        if (fs.existsSync(DB_SOURCE) && !fs.existsSync(DB_PATH)) {
+            fs.copyFileSync(DB_SOURCE, DB_PATH);
+            console.log('Database copied to /tmp');
+        }
+    } catch (err) {
+        console.error('Error copying database to /tmp:', err);
+    }
+}
+
+const db = new sqlite3.Database(DB_PATH, (err) => {
     if (err) {
         console.error('Error connecting to SQLite database:', err.message);
     } else {
-        console.log('Connected to the SQLite database.');
+        console.log(`Connected to database at ${DB_PATH}`);
         initDb();
     }
 });
@@ -516,6 +534,15 @@ app.post('/api/zoom/create-meeting', async (req, res) => {
         console.error("Zoom Integration Error:", error);
         res.status(500).json({ error: "Failed to create Zoom meeting. Check server logs." });
     }
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error('SERVER ERROR:', err);
+    res.status(500).json({
+        error: "Internal Server Error",
+        message: err.message
+    });
 });
 
 if (process.env.NODE_ENV !== 'production') {
