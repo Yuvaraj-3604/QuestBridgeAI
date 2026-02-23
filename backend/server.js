@@ -1,5 +1,6 @@
 
 const express = require('express');
+const path = require('path');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
@@ -42,7 +43,7 @@ app.use((req, res, next) => {
 });
 
 // Initialize Database
-const db = new sqlite3.Database('./questbridge.sqlite', (err) => {
+const db = new sqlite3.Database(path.join(__dirname, 'questbridge.sqlite'), (err) => {
     if (err) {
         console.error('Error connecting to SQLite database:', err.message);
     } else {
@@ -517,6 +518,10 @@ app.post('/api/zoom/create-meeting', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+}
+
+module.exports = app;
