@@ -9,6 +9,7 @@ const bcrypt = require('bcryptjs');
 const { Parser } = require('json2csv');
 const { createZoomMeeting } = require('./zoomService');
 const nodemailer = require('nodemailer');
+console.log('Backend starting... NODE_ENV:', process.env.NODE_ENV);
 require('dotenv').config();
 
 // Nodemailer Transporter
@@ -63,10 +64,14 @@ if (process.env.NODE_ENV === 'production') {
 
 const db = new sqlite3.Database(DB_PATH, (err) => {
     if (err) {
-        console.error('Error connecting to SQLite database:', err.message);
+        console.error('CRITICAL: SQLite connection error:', err);
     } else {
         console.log(`Connected to database at ${DB_PATH}`);
-        initDb();
+        try {
+            initDb();
+        } catch (initErr) {
+            console.error('CRITICAL: initDb failed:', initErr);
+        }
     }
 });
 
@@ -123,6 +128,16 @@ const initDb = () => {
 };
 
 // --- API Endpoints ---
+// --- Health Check ---
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        env: process.env.NODE_ENV,
+        dbPath: DB_PATH,
+        time: new Date().toISOString()
+    });
+});
+
 app.post('/api/test-post', (req, res) => res.json({ ok: true, body: req.body }));
 
 // --- Auth Endpoints ---
